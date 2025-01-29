@@ -64,6 +64,108 @@ Jenkins is an open-source automation server widely used for Continuous Integrati
 
 Step 1: Install Jenkins
 
+
+## (Option 1)    SSH into your AWS Linux VM use ssh
+
+1- SSH Aws linux machine 
+
+```
+sudo su -
+vi jenkins_install.sh
+```
+2- Copy and paste code in your script.
+
+```
+
+#!/bin/bash
+
+# Stop and remove any existing Jenkins container
+echo "Stopping and removing existing Jenkins container (if any)..."
+docker stop jenkins-container > /dev/null 2>&1
+docker rm jenkins-container > /dev/null 2>&1
+
+# Install Docker if not already installed
+if ! command -v docker &> /dev/null; then
+    echo "Docker not found. Installing Docker..."
+    yum install -y docker
+    systemctl start docker
+    systemctl enable docker
+else
+    echo "Docker is already installed."
+fi
+
+# Create Jenkins data directory and set permissions
+JENKINS_HOME="/opt/jenkins"
+echo "Setting up Jenkins data directory at $JENKINS_HOME..."
+mkdir -p $JENKINS_HOME
+chown 1000 -R $JENKINS_HOME
+
+# Run Jenkins container
+echo "Starting Jenkins container..."
+docker run -d \
+    -p 80:8080 \
+    -p 50000:50000 \
+    --name jenkins-container \
+    -v $JENKINS_HOME:/var/jenkins_home \
+    jenkins/jenkins:lts-jdk11
+
+# Wait for Jenkins to initialize
+echo "Waiting for Jenkins to initialize..."
+sleep 10
+
+# Retrieve the initial admin password
+INITIAL_PASSWORD_FILE="$JENKINS_HOME/secrets/initialAdminPassword"
+if [ -f "$INITIAL_PASSWORD_FILE" ]; then
+    YOUR_PASSWORD=$(cat $INITIAL_PASSWORD_FILE)
+    echo "Jenkins is now running!"
+    echo "Access Jenkins at: http://$(curl -s ifconfig.me):80"
+    echo "Your Jenkins initial admin password is: $YOUR_PASSWORD"
+else
+    echo "Error: Jenkins initial admin password file not found. Please check the container logs for errors."
+    docker logs jenkins-container
+    exit 1
+fi
+
+```
+
+3- Change file per
+
+```
+chmod +x jenkins_install.sh
+```
+
+4- Execute script. 
+
+```
+jenkins_install.sh
+```
+
+Note : You can find your jenkins first login password at the end when script complete.
+
+
+## Login to Web Console, 
+
+http://Ip_address:8080
+
+![Provide Password](images/lab3/3.png)
+
+- Select "Install Suggested Plugins"
+
+![Suggested Plugins](images/lab3/4.png)
+
+- Wait for Jenkins to compelete initial setup.
+
+![Initialization](images/lab3/4.png)
+
+- On Next screen Create your own admin user
+
+![User Setup](images/lab3/5.png)
+
+
+
+## Option 2  ( May not work with Amazon linux 2023 Virtual image )
+
+
 - Update system and install jenkins with yum command on Amazon Linux VM. 
 
 ```
@@ -107,7 +209,7 @@ sudo systemctl enable jenkins
 cat /var/lib/jenkins/secrets/initialAdminPassword
 ```
 
-- Login to Web Console, 
+## Login to Web Console, 
 
 http://Ip_address:8080
 
